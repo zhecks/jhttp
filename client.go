@@ -91,8 +91,8 @@ func (c *Client) WebSocket(url string) (*websocket.Conn, *http.Response, error) 
 func (c *Client) doReq(url string, reqType string, data interface{}) (*Result, error) {
 	var (
 		result *Result
-		err    error
-		bytes  []byte
+		err       error
+		dataBytes []byte
 	)
 	for i := 0; i < c.retry+1; i++ {
 		switch v := data.(type) {
@@ -103,11 +103,11 @@ func (c *Client) doReq(url string, reqType string, data interface{}) (*Result, e
 		case string:
 			result, err = c.doString(url, reqType, v)
 		default:
-			bytes, err = json.Marshal(v)
+			dataBytes, err = json.Marshal(v)
 			if err != nil {
 				return nil, err
 			}
-			result, err = c.doBytes(url, reqType, bytes)
+			result, err = c.doBytes(url, reqType, dataBytes)
 		}
 		if err == nil && result.IsSuccess() {
 			return result, nil
