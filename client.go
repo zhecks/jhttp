@@ -89,20 +89,32 @@ func (c *Client) WebSocket(url string) (*websocket.Conn, *http.Response, error) 
 }
 
 func (c *Client) doReq(url string, reqType string, data interface{}) (*Result, error) {
-	switch v := data.(type) {
-	case FormData:
-		return c.doForm(url, reqType, v)
-	case []byte:
-		return c.doBytes(url, reqType, v)
-	case string:
-		return c.doString(url, reqType, v)
-	default:
-		data, err := json.Marshal(v)
-		if err != nil {
-			return nil, err
+	var (
+		result *Result
+		err    error
+		bytes  []byte
+	)
+	for i := 0; i < c.retry+1; i++ {
+		switch v := data.(type) {
+		case FormData:
+			result, err = c.doForm(url, reqType, v)
+		case []byte:
+			result, err = c.doBytes(url, reqType, v)
+		case string:
+			result, err = c.doString(url, reqType, v)
+		default:
+			bytes, err = json.Marshal(v)
+			if err != nil {
+				return nil, err
+			}
+			result, err = c.doBytes(url, reqType, bytes)
 		}
-		return c.doBytes(url, reqType, data)
+		if err == nil && result.IsSuccess() {
+			return result, nil
+		}
+		time.Sleep(time.Millisecond * 500)
 	}
+	return nil, err
 }
 
 func (c *Client) doBytes(url string, reqType string, data []byte) (*Result, error) {
@@ -145,21 +157,8 @@ func (c *Client) do(req *http.Request) (*Result, error) {
 	for _, cookie := range c.cookie {
 		req.AddCookie(cookie)
 	}
-
-	for i := 0; i < c.retry+1; i++ {
-		resp, err = c.http.Do(req)
-		if err == nil {
-			if resp.StatusCode == http.StatusOK {
-				break
-			} else {
-				err := resp.Body.Close()
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-		time.Sleep(time.Millisecond * 500)
-	}
+	// send request
+	resp, err = c.http.Do(req)
 	if err != nil {
 		return nil, err
 	}
