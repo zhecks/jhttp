@@ -2,6 +2,7 @@ package jhttp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +16,7 @@ type ClientOption = func(*Client)
 type ParamsOption = func() string
 
 type Client struct {
+	ctx       context.Context
 	http      *http.Client
 	websocket *websocket.Dialer
 	header    map[string]string
@@ -28,6 +30,12 @@ func NewClient(opts ...ClientOption) *Client {
 		opt(client)
 	}
 	return client
+}
+
+func WithContext(ctx context.Context) ClientOption {
+	return func(client *Client) {
+		client.ctx = ctx
+	}
 }
 
 func AddHeader(key, value string) ClientOption {
@@ -58,7 +66,7 @@ func (c *Client) AddCookie(cookie []*http.Cookie) {
 	c.cookie = cookie
 }
 
-func (c *Client) Get(url string, data interface{}, opts ...ParamsOption) (*Result, error) {
+func (c *Client) Get(url string, data any, opts ...ParamsOption) (*Result, error) {
 	url = url + "?"
 	for i := 0; i < len(opts); i++ {
 		url = url + opts[i]()
@@ -69,7 +77,7 @@ func (c *Client) Get(url string, data interface{}, opts ...ParamsOption) (*Resul
 	return c.doReq(url, "GET", data)
 }
 
-func (c *Client) Post(url string, data interface{}, opts ...ParamsOption) (*Result, error) {
+func (c *Client) Post(url string, data any, opts ...ParamsOption) (*Result, error) {
 	url = url + "?"
 	for i := 0; i < len(opts); i++ {
 		url = url + opts[i]()
@@ -88,9 +96,9 @@ func (c *Client) WebSocket(url string) (*websocket.Conn, *http.Response, error) 
 	return c.websocket.Dial(url, header)
 }
 
-func (c *Client) doReq(url string, reqType string, data interface{}) (*Result, error) {
+func (c *Client) doReq(url string, reqType string, data any) (*Result, error) {
 	var (
-		result *Result
+		result    *Result
 		err       error
 		dataBytes []byte
 	)
@@ -148,6 +156,10 @@ func (c *Client) do(req *http.Request) (*Result, error) {
 	var err error
 	if c.http == nil {
 		c.http = http.DefaultClient
+	}
+	// set context
+	if c.ctx != nil {
+		req = req.WithContext(c.ctx)
 	}
 	// set http header
 	for k, v := range c.header {

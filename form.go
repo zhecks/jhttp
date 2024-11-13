@@ -13,8 +13,10 @@ import (
 
 // from.go is used to post form-data requests
 
-type FieldType uint8
-type ContentType string
+type (
+	FieldType   uint8
+	ContentType string
+)
 
 const (
 	Text FieldType = 1
@@ -28,12 +30,14 @@ const (
 	XML  ContentType = "text/xml"
 )
 
-type FormOption = func(form *form)
-type form struct {
-	fields     []string
-	values     []string
-	fieldTypes []FieldType
-}
+type (
+	FormOption = func(form *form)
+	form       struct {
+		fields     []string
+		values     []string
+		fieldTypes []FieldType
+	}
+)
 type FormData struct {
 	buf    *bytes.Buffer
 	writer *multipart.Writer

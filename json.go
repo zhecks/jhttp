@@ -7,14 +7,16 @@ import (
 	"strings"
 )
 
-type JsonOption func(jsonStruct *JsonStruct)
-type JsonStruct struct {
-	jsonMp map[string]interface{}
-}
+type (
+	JsonOption func(jsonStruct *JsonStruct)
+	JsonStruct struct {
+		jsonMp map[string]any
+	}
+)
 
 func NewJsonParams(opts ...JsonOption) []byte {
 	var jsonStruct JsonStruct
-	jsonStruct.jsonMp = make(map[string]interface{})
+	jsonStruct.jsonMp = make(map[string]any)
 	for _, opt := range opts {
 		opt(&jsonStruct)
 	}
@@ -48,8 +50,14 @@ func NewJsonParams(opts ...JsonOption) []byte {
 	return []byte(str.String())
 }
 
-func AddJsonParam(key string, value interface{}) JsonOption {
+func AddJsonParam(key string, value any) JsonOption {
 	return func(jsonStruct *JsonStruct) {
 		jsonStruct.jsonMp[key] = value
+	}
+}
+
+func WithJsonParams(data map[string]any) JsonOption {
+	return func(jsonStruct *JsonStruct) {
+		jsonStruct.jsonMp = data
 	}
 }

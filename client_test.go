@@ -1,7 +1,6 @@
 package jhttp
 
 import (
-	"io"
 	"testing"
 	"time"
 
@@ -51,10 +50,10 @@ func TestPost(t *testing.T) {
 func TestWebsocket(t *testing.T) {
 	client := NewClient()
 	ws, resp, err := client.WebSocket("ws://121.40.165.18:8800")
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
+	defer func() {
+		err := resp.Body.Close()
 		require.Nil(t, err)
-	}(resp.Body)
+	}()
 	defer func(ws *websocket.Conn) {
 		err := ws.Close()
 		if err != nil {

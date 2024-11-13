@@ -31,9 +31,9 @@ type Result struct {
 func NewResult(resp *http.Response) (*Result, error) {
 	var result Result
 	result.resp = resp
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(result.resp.Body)
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// cache the response body
 	readSlice := make([]byte, ReadSize)
@@ -57,18 +57,18 @@ func NewResult(resp *http.Response) (*Result, error) {
 }
 
 func (result *Result) Body() ([]byte, error) {
-	if result.cache != nil && len(result.cache) > 0 {
+	if len(result.cache) > 0 {
 		return result.cache, nil
 	}
 	return nil, fmt.Errorf("empty body to read")
 }
 
-func (result *Result) JsonUnmarshal(typ interface{}) error {
+func (result *Result) JsonUnmarshal(v any) error {
 	body, err := result.Body()
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(body, typ)
+	err = json.Unmarshal(body, v)
 	if err != nil {
 		return err
 	}
