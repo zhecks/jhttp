@@ -38,6 +38,7 @@ type (
 		fieldTypes []FieldType
 	}
 )
+
 type FormData struct {
 	buf    *bytes.Buffer
 	writer *multipart.Writer
@@ -81,6 +82,9 @@ func AddFormParams(field string, value string, fieldType FieldType) FormOption {
 func (f form) build() (*FormData, error) {
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
+	defer func() {
+		_ = w.Close()
+	}()
 	for i := 0; i < len(f.fields); i++ {
 		field := f.fields[i]
 		value := f.values[i]
